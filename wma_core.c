@@ -156,3 +156,25 @@ done:
     avformat_close_input(&fmt);
     return ret;
 }
+
+static const char *tag(AVFormatContext *fmt, const char *key) {
+    const AVDictionaryEntry *e = av_dict_get(fmt->metadata, key, NULL, 0);
+    return e && e->value ? e->value : "";
+}
+
+int wma_probe(const char *in_path, char *out, int out_size) {
+    AVFormatContext *fmt = NULL;
+    av_log_set_level(AV_LOG_QUIET);
+    if (avformat_open_input(&fmt, in_path, NULL, NULL) < 0) return -2;
+    if (avformat_find_stream_info(fmt, NULL) < 0) { avformat_close_input(&fmt); return -3; }
+    long long ms = 0;
+    if (fmt->duration != AV_NOPTS_VALUE && fmt->duration > 0) ms = fmt->duration / 1000;
+    const char *year = tag(fmt, "date");
+    const char *track = tag(fmt, "track");
+    int n = snprintf(out, (size_t)out_size, "%lld\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s",
+                     ms, tag(fmt, "title"), tag(fmt, "artist"), tag(fmt, "album"), track, year,
+                     tag(fmt, "genre"), tag(fmt, "album_artist"));
+    avformat_close_input(&fmt);
+    if (n < 0 || n >= out_size) return -4;
+    return n;
+}
