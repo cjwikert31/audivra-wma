@@ -1,0 +1,21 @@
+name: Build WMA library
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for all phone types
+        run: |
+          ./build_android.sh arm64-v8a
+          ./build_android.sh armeabi-v7a
+          ./build_android.sh x86_64
+      - name: Save the result
+        uses: actions/upload-artifact@v4
+        with:
+          name: audivra-wma-libs
+          path: out/jniLibs
